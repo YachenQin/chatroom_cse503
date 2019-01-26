@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8"/>
+    <title>Chat Room </title>
+    <!-- <link href="/home/Xutao/abc/static/chat_room5" rel="stylesheet" type="text/css"/> -->
+    <style type="text/css">
+            .input{
+        text-align: center;
+        margin:0 auto;
+        border:1px solid hsla(0,80%,75%,0.2);
+        height: 85px;
+        width: 400px;
+    }
+            .main_page{
+        text-align: center;
+        margin:0 auto;
+        border:1px solid black;
+        width: 700px;
+    }
+            #add_profile{
+        text-align: center;
+        margin:0 auto;
+        border:1px solid black;
+        width: 700px;
+            }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type ="text/javascript">
+        var username=prompt("input username");
+        var now_room;
+        var socketio=io.connect();
+        var rooms1=[]; 
+        var rp={}; 
+        var banlist={};
+        var whether2={};
+        var profile2={};
+        let w1={};
+        let w2={};
+        socketio.on('connect', function() {
+			now_room="main room";
+            rp["main room"] = "";
+            rooms1.push("main room");
+            socketio.emit('new',{un:username});
+		});
+        socketio.on("msg_client",function(data) {
+            document.getElementById("public3").appendChild(document.createElement("hr"));
+            document.getElementById("public3").appendChild(document.createTextNode(data.un+":"+ data.msg));
+        });
+  
+         socketio.on("entered_room", function(data){
+            document.getElementById("public3").appendChild(document.createElement("hr"));
+            document.getElementById("public3").appendChild(document.createTextNode(data.enter + " entered the room"));
+        });
+        
+        socketio.on("show_all", function(data){
+            now_room=data.present;
+            var room2=data.present;
+            var list3=data.all;
+            document.getElementById("users1").innerHTML="All of the users are as below: "+"<br>";
+            for(var i in list3){
+              if(list3[i] == room2){
+                document.getElementById("users1").innerHTML+=i+" is in "+room2+"<br>";
+                console.log(i);
+              }
+            }
+            
+        });
+        
+        socketio.on("add", function(data){
+            document.getElementById("roomsinall").innerHTML = "Rooms name: "+"<br>";
+            rooms1=data.temp_room;
+            for (var i in rooms1){
+                if(rooms1[i]!==undefined){
+              document.getElementById("roomsinall").innerHTML+=rooms1[i]+"<br>";
+              console.log(rooms1[i]+" has been created");
+            }}
+            
+        });
+
+        socketio.on("update", function(data){
+            var string = data.un+" connected to the room. " ;
+            document.getElementById("public3").appendChild(document.createElement("hr"));
+            document.getElementById("public3").appendChild(document.createTextNode(string));
+        });
+        
+        socketio.on("private_send",function(data) {
+            var receiver=data.receiver;
+			var msg3=data.message;
+            var sender=data.sender;
+            if(receiver==username){
+                alert("you receive a private message");
+                var information=sender+ " : "+msg3;
+                document.getElementById("private4").appendChild(document.createElement("hr"));
+                document.getElementById("private4").appendChild(document.createTextNode(information));
+            }
+        });
+
+        socketio.on("banu", function(data){
+            var banlist1=data.bu;
+            var br=data.br;
+            banlist[br]=banlist1;
+            if(banlist1==username){
+                alert("the owner banned you");
+                var x="main room";
+                socketio.emit("enter", {enter_room_name:x});
+            }
+        });
+        
+        socketio.on("kicku", function(data){
+            var ku=data.ku;
+            if(ku==username){
+                alert("the owner kicked you");
+                var nr="main room";
+                socketio.emit("enter", {enter_room_name:nr});
+            }
+        });
+        
+        socketio.on("enter_cr", function(data){
+            var rn=document.getElementById("er").value;
+            var pw1=document.getElementById("ep").value;
+            var pw2=data.pw;
+            document.getElementById("er").value="";
+            document.getElementById("ep").value="";
+            if(banlist[rn]==username){
+                alert("Sorry, the owner does not allow you to enter!");
+                return;
+            }
+            else {
+                if(pw1===pw2||pw2===""){
+                    now_room=rn;
+                    socketio.emit("enter", {enter_room_name: rn,enter_room_password:pw1,Room_rightnow:now_room});
+                }
+                else{
+                    alert("Wrong password");
+                    return;
+                }
+            }
+            
+        });
+
+        socketio.on("cp", function(data){
+            var rn=data.room;
+            var oe=data.owner;
+            if(oe==username){
+                alert("you changed room password: "+rn);
+            }
+        });        
+
+        socketio.on("view", function(data){
+        //     var un=data.username;
+        //     var profile1=data.profile;
+        //     if(username==un){
+        //         alert("view profile success");
+        //         document.getElementById("view_profile").appendChild(document.createElement("hr"));
+        //         document.getElementById("view_profile").appendChild(document.createTextNode(profile1));
+        // }
+        });
+
+        socketio.on("query1", function(data){
+            var un1=data.un1;
+            var un_real=data.username;
+            var wh1=data.wh1;
+            var wh2=data.wh2;
+            var pro=data.p2;
+                if(username==un_real){
+                if(wh1==true&&wh2==false){
+                    alert("the user does not want others to view his profile");
+                }
+                else if(wh1==false&&wh2==true){
+                    alert("query success!");
+                    document.getElementById("view_others_profile").appendChild(document.createElement("hr"));
+                    document.getElementById("view_others_profile").appendChild(document.createTextNode(pro));
+                }
+                else{
+                    alert("unknown mistakes");
+                }
+            }
+
+            // if(whether2[un1]=="no"){
+                
+            // }
+            // else if(whether2[un1]=="yes"){
+            //     document.getElementById("view_others_profile").appendChild(document.createElement("hr"));
+            //     document.getElementById("view_others_profile").appendChild(document.createTextNode(profile["un1"]));
+            // }
+            // else{
+            //     alert("unknown mistakes");
+            // }
+
+        });
+
+        socketio.on("cp_error",function() {
+           alert("password change mistakes");
+        
+        });
+
+        socketio.on("private_send_error",function() {
+           alert("you cannot send private message, because you're not in the same room");
+        
+        });
+        
+        socketio.on("bane",function() {
+           alert("ban mistakes!");
+        
+        });
+
+        socketio.on("kicke",function() {
+           alert("kick mistakes!");
+        
+        });
+
+        function create(){
+            var rn=document.getElementById("new1").value;
+            var pw=document.getElementById("new2").value;
+            document.getElementById("new1").value ="";
+            document.getElementById("new2").value = "";
+            for (var i in rooms1){
+                if(rooms1[i]===rn){
+                alert("the room already exists");
+                    return;
+                }
+            }
+            rooms1.push(rn);
+            rp[rn] = pw;
+            socketio.emit("build", {rn:rn,rp:pw, oe:username});
+        }
+
+         function public_send(){
+           var x=document.getElementById("public2").value;
+           document.getElementById("public2").value="";
+           socketio.emit("msg_server",{msg:x, un:username});
+        }
+        
+         function private_send(){
+            var u1=document.getElementById("private3").value;
+            var m1=document.getElementById("private2").value;
+            document.getElementById("private3").value ="";
+            document.getElementById("private2").value = "";
+            socketio.emit("pri_msg", {sender:username,receiver:u1,msg:m1});
+        }
+        
+        function ban(){
+            var ub=document.getElementById("bans").value;
+            var e=username;
+            document.getElementById("bans").value = "";
+             if(ub==e){
+                alert("your can't ban yourself");
+                return;
+            }
+            socketio.emit("bans", {ub:ub,e:e});
+        }
+
+        function kick(){
+            var uk=document.getElementById("kicks").value;
+            var e=username;
+            document.getElementById("kicks").value="";
+            if(uk==e){
+                alert("your can't kick yourself");
+                return;
+            }
+            socketio.emit("kicks", {uk:uk,e:e});
+        }
+
+        function pw(){
+            var rn=document.getElementById("er").value;
+            var pw=document.getElementById("ep").value;
+            socketio.emit("fp", {rn:rn,rp:pw,Room_rightnow:now_room});
+        }
+
+        function change_room(){
+            var pc=document.getElementById("change2").value;
+            var rc=document.getElementById("change1").value;
+            document.getElementById("change1").value = "";
+            document.getElementById("change2").value = "";
+             if(rc=="main room"){
+                alert("your can't change anything from main room");
+                return;
+            }
+            socketio.emit("cp", {pc:pc,rc:rc,un:username});
+        }
+        
+        function view_profile(){
+            var profile1=document.getElementById("add1").value;
+            var whe1=document.getElementById("no").checked;
+            var whe2=document.getElementById("yes").checked;
+            w1[username]=document.getElementById("no").checked;
+            w2[username]=document.getElementById("yes").checked;
+            // w1.set(username,true);
+
+            // w2.set(username,false);
+            // alert(username);
+            // for(var i in w1){
+            //     alert(i);
+            //     alert(w1[i]);
+            // }
+            // alert(w1[username]);
+            if(whe1==true){
+                whether2[username]="no";
+            }
+            if(whe2==true){
+                whether2[username]="yes";
+            }
+            profile2[username]=profile1;
+            document.getElementById("add1").value = "";
+            document.getElementById("view_profile").appendChild(document.createElement("hr"));
+            document.getElementById("view_profile").appendChild(document.createTextNode(profile1));
+            socketio.emit("profile", {profile1:profile1,username:username,profile2:profile2,whe1:whe1,whe2:whe2});
+        }
+        
+        function query_profile(){
+            var un1=document.getElementById("query").value;
+            // var whe1=document.getElementById("no").checked;
+            // var whe2=document.getElementById("yes").checked;
+            document.getElementById("query").value = "";
+            var wh1=w1[un1];
+            var wh2=w2[un1];
+            // socketio.emit("query", {un1:un1，username:username, wh1:wh1, wh2:wh2});
+            socketio.emit("query", {un1:un1,username:username,wh1:wh1,wh2:wh2});
+        }
+        
+      </script>
+</head>
+<body>
+    <div id="title" class="input">
+       <script type="text/javascript">
+            document.getElementById('title').innerHTML ="Chat Room"+"<br>";
+            document.getElementById('title').innerHTML += "Welcome, "+ username;
+            
+        </script>
+    
+    </div>       
+        <br>
+        <!-- create a room -->
+         <div class="input" id = "create_room">
+            Set up a new Room
+            <br>
+            <label>Room name<input type="text" id ="new1" name="new1"></label>
+            <br>
+            <label>Password:<input type="text" id ="new2" name="new2"></label>
+            <br>
+            <input type="submit" name="submit1" id="submit1" value="Set up">
+        </div>
+        <br>
+        <!-- attend a room -->
+        <div class="input" id = "join_room">
+            Enter the Room
+            <br>
+            <label>Room name:<input type="text" id ="er" name="er"></label>
+            <br>
+            <label>Password:<input type="text" id ="ep" name="ep"></label>
+            <br>
+            <input type="submit" name="submit2" id="submit2" value="Enter">
+        </div>
+        <br>
+        <!-- public messages -->
+        <div class="input" id = "public1">
+            Send a public Message
+            <br>
+            <label>Public Message:<input type="text" id ="public2" name="public2"></label>
+            <br><br>
+            <input type="submit" name="submit3" id="submit3" value="Send">
+        </div>
+        <br>
+        <!-- private messages -->
+        <div class="input" id = "private1">
+            Send a private message
+            <br>
+            <label>Private Message:<input type="text" id ="private2" name="private2"></label>
+            <br>
+            <label>User name:<input type="text" id ="private3" name="private3"></label>
+            <br>
+            <input type="submit" name="submit4" id="submit4" value="Send">
+        </div>
+        <br>
+        <!-- kick -->
+        <div class="input" id = "kick1">
+            Kick a user(You can kick someone only if the user is in the same room and you are the owner)
+            <br>
+            <label>User name:<input type="text" id ="kicks" name="kicks"></label>
+            <br>
+            <input type="submit" name="kick" id="kick" value="Kick">
+        </div>
+        <br>
+        <!-- ban -->
+        <div class="input" id = "ban1">
+            Ban a user(You can ban someone only if the user is in the same room and you are the owner)
+            <br>
+            <label>User name:<input type="text" id ="bans" name="bans"></label>
+            <br>
+            <input type="submit" name="ban" id="ban" value="Ban">
+        </div>
+        <br>
+        <!-- change password -->
+        <div class="input" id = "change3">
+            Change a room's password
+            <br>
+            <label>Room name:<input type="text" id ="change1" name="change1"></label>
+            <br>
+            <label>New Password:<input type="text" id ="change2" name="change2"></label>
+            <br>
+            <input type="submit" name="submit5" id="submit5" value="Change">
+        </div><br>
+
+        <!-- query others' profile -->
+        <div id = "query_others_profile" class="input">
+            View others' profiles here(You can see others profile only if he allows others to view his profile)
+            <br>
+            <label>Username:<input type="text" id ="query" name="query"></label>
+            <br> 
+            <input type="submit" name="submit7" id="submit7" value="Query">
+        </div><br>   
+             
+        <!-- add users' profile -->
+        <div id = "add_profile" >
+            Add personal profile:
+            <br><textarea rows="5" cols="40" id="add1" name="add1"></textarea>
+            <br>
+            whether you want your profile seen by others
+            <br>
+            yes<input type="radio" name="whether_can_be_seen_by_others" id="yes" value="yes">
+            no<input type="radio" name="whether_can_be_seen_by_others" id="no" value="no">
+            <input type="submit" name="submit6" id="submit6" value="Submit">
+        </div><br>
+
+        <!-- view users' profile -->
+ <!--        <div id="view_profile" class="main_page">View profile
+        </div><br>
+        <div  class = "main_page" id = "users1">Users:</div><br>
+        <div class = "main_page" id = "public3">Public message:</div><br>
+        <div class = "main_page" id = "private4">Private message:</div><br>
+        <div class = "main_page" id = "roomsinall">Rooms name:</div><br> -->
+
+
+
+        <!-- view users' profile -->
+        
+        <div  class = "main_page" id = "users1">Users:</div><br>
+        <div class = "main_page" id = "public3">Public message:</div><br>
+        <div class = "main_page" id = "private4">Private message:</div><br>
+        <div class = "main_page" id = "roomsinall">Rooms name:</div><br>
+        <div id="view_profile" class="main_page">View profile</div><br>
+        <div id = "view_others_profile" class="main_page">View others' profile:</div><br>
+
+
+
+
+        
+
+    <script>       
+        document.getElementById('submit1').addEventListener("click",create,false);
+        document.getElementById('submit2').addEventListener("click",pw,false);
+        document.getElementById('submit3').addEventListener("click",public_send,false);
+        document.getElementById('submit4').addEventListener("click",private_send,false);
+        document.getElementById('submit5').addEventListener("click",change_room,false);
+        document.getElementById('kick').addEventListener("click",kick,false);
+        document.getElementById('ban').addEventListener("click",ban,false);
+        document.getElementById('submit6').addEventListener("click",view_profile,false);
+        document.getElementById('submit7').addEventListener("click",query_profile,false);
+    </script>
+</body>
+</html>
